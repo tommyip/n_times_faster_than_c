@@ -1,4 +1,5 @@
 use rand::{distributions::Bernoulli, prelude::Distribution, thread_rng};
+use seq_macro::seq;
 use std::arch::aarch64::{vaddlvq_u8, vaddq_u8, vld1q_dup_u8, vld1q_u8, vmovq_n_u8, vqsubq_u8};
 
 pub fn baseline(input: &str) -> i64 {
@@ -43,7 +44,7 @@ pub fn opt2_count_s(input: &str) -> i64 {
     return (2 * n_s) as i64 - input.len() as i64;
 }
 
-pub fn opt3_simd_naive(input: &str) -> i64 {
+pub fn opt3_simd(input: &str) -> i64 {
     let n = input.len();
     const N_LANES: usize = 16;
     let n_blocks = n / N_LANES;
@@ -69,180 +70,48 @@ pub fn opt3_simd_naive(input: &str) -> i64 {
     res + baseline_bytes(&input[n_fast..])
 }
 
-pub fn opt4_simd_unrolled(input: &str) -> i64 {
-    let n = input.len();
-    const N_LANES: usize = 16;
-    const UNROLL_FACTOR: usize = 2;
-    const N_ELEM_PER_ITER: usize = N_LANES * UNROLL_FACTOR;
-    let n_blocks = n / N_ELEM_PER_ITER;
-    let n_fast = n_blocks * N_ELEM_PER_ITER;
-    let mut res = 0;
-    unsafe {
-        let mut acc1_v = vmovq_n_u8(0);
-        let mut acc2_v = vmovq_n_u8(0);
-        let sub_v = vld1q_dup_u8(&(b's' - 1));
-        for block_i in 0..n_blocks {
-            let offset = block_i * N_LANES * UNROLL_FACTOR;
-
-            let input1_v = vld1q_u8(input[offset..].as_ptr());
-            let eq_s1_v = vqsubq_u8(input1_v, sub_v);
-            acc1_v = vaddq_u8(acc1_v, eq_s1_v);
-
-            let input2_v = vld1q_u8(input[offset + N_LANES..].as_ptr());
-            let eq_s2_v = vqsubq_u8(input2_v, sub_v);
-            acc2_v = vaddq_u8(acc2_v, eq_s2_v);
-
-            if block_i % (u8::MAX as usize + 1) == u8::MAX as usize {
-                res += vaddlvq_u8(acc1_v) as i64;
-                res += vaddlvq_u8(acc2_v) as i64;
-                acc1_v = vmovq_n_u8(0);
-                acc2_v = vmovq_n_u8(0);
+macro_rules! simd_unrolled {
+    ($func_name:ident, $unroll_factor:literal) => {
+         pub fn $func_name(input: &str) -> i64 {
+            let n = input.len();
+            const N_LANES: usize = 16;
+            const N_ELEM_PER_ITER: usize = N_LANES * $unroll_factor;
+            let n_blocks = n / N_ELEM_PER_ITER;
+            let n_fast = n_blocks * N_ELEM_PER_ITER;
+            let mut res = 0;
+            unsafe {
+                seq!(I in 0..$unroll_factor {
+                    let mut v_acc~I = vmovq_n_u8(0);
+                });
+                let sub_v = vld1q_dup_u8(&(b's' - 1));
+                for block_i in 0..n_blocks {
+                    let offset = block_i * N_LANES * $unroll_factor;
+                    seq!(I in 0..$unroll_factor {
+                        let v_input~I = vld1q_u8(input[offset + I * N_LANES..].as_ptr());
+                        let v_eq_s~I= vqsubq_u8(v_input~I, sub_v);
+                        v_acc~I = vaddq_u8(v_acc~I, v_eq_s~I);
+                    });
+                    if block_i % (u8::MAX as usize + 1) == u8::MAX as usize {
+                        seq!(I in 0..$unroll_factor {
+                            res += vaddlvq_u8(v_acc~I) as i64;
+                            v_acc~I = vmovq_n_u8(0);
+                        });
+                    }
+                }
+                seq!(I in 0..$unroll_factor {
+                    res += vaddlvq_u8(v_acc~I) as i64;
+                });
             }
+            res = (2 * res) - n_fast as i64;
+            res + baseline_bytes(&input[n_fast..])
         }
-        res += vaddlvq_u8(acc1_v) as i64;
-        res += vaddlvq_u8(acc2_v) as i64;
     }
-    res = (2 * res) - n_fast as i64;
-    res + baseline_bytes(&input[n_fast..])
 }
 
-pub fn opt5_simd_unrolled_4x(input: &str) -> i64 {
-    let n = input.len();
-    const N_LANES: usize = 16;
-    const UNROLL_FACTOR: usize = 4;
-    const N_ELEM_PER_ITER: usize = N_LANES * UNROLL_FACTOR;
-    let n_blocks = n / N_ELEM_PER_ITER;
-    let n_fast = n_blocks * N_ELEM_PER_ITER;
-    let mut res = 0;
-    unsafe {
-        let mut acc1_v = vmovq_n_u8(0);
-        let mut acc2_v = vmovq_n_u8(0);
-        let mut acc3_v = vmovq_n_u8(0);
-        let mut acc4_v = vmovq_n_u8(0);
-        let sub_v = vld1q_dup_u8(&(b's' - 1));
-        for block_i in 0..n_blocks {
-            let offset = block_i * N_LANES * UNROLL_FACTOR;
-
-            let input1_v = vld1q_u8(input[offset..].as_ptr());
-            let eq_s1_v = vqsubq_u8(input1_v, sub_v);
-            acc1_v = vaddq_u8(acc1_v, eq_s1_v);
-
-            let input2_v = vld1q_u8(input[offset + N_LANES..].as_ptr());
-            let eq_s2_v = vqsubq_u8(input2_v, sub_v);
-            acc2_v = vaddq_u8(acc2_v, eq_s2_v);
-
-            let input3_v = vld1q_u8(input[offset + 2 * N_LANES..].as_ptr());
-            let eq_s3_v = vqsubq_u8(input3_v, sub_v);
-            acc3_v = vaddq_u8(acc3_v, eq_s3_v);
-
-            let input4_v = vld1q_u8(input[offset + 3 * N_LANES..].as_ptr());
-            let eq_s4_v = vqsubq_u8(input4_v, sub_v);
-            acc4_v = vaddq_u8(acc4_v, eq_s4_v);
-
-            if block_i % (u8::MAX as usize + 1) == u8::MAX as usize {
-                res += vaddlvq_u8(acc1_v) as i64;
-                res += vaddlvq_u8(acc2_v) as i64;
-                res += vaddlvq_u8(acc3_v) as i64;
-                res += vaddlvq_u8(acc4_v) as i64;
-                acc1_v = vmovq_n_u8(0);
-                acc2_v = vmovq_n_u8(0);
-                acc3_v = vmovq_n_u8(0);
-                acc4_v = vmovq_n_u8(0);
-            }
-        }
-        res += vaddlvq_u8(acc1_v) as i64;
-        res += vaddlvq_u8(acc2_v) as i64;
-        res += vaddlvq_u8(acc3_v) as i64;
-        res += vaddlvq_u8(acc4_v) as i64;
-    }
-    res = (2 * res) - n_fast as i64;
-    res + baseline_bytes(&input[n_fast..])
-}
-
-pub fn opt6_simd_unrolled_8x(input: &str) -> i64 {
-    let n = input.len();
-    const N_LANES: usize = 16;
-    const UNROLL_FACTOR: usize = 8;
-    const N_ELEM_PER_ITER: usize = N_LANES * UNROLL_FACTOR;
-    let n_blocks = n / N_ELEM_PER_ITER;
-    let n_fast = n_blocks * N_ELEM_PER_ITER;
-    let mut res = 0;
-    unsafe {
-        let mut acc1_v = vmovq_n_u8(0);
-        let mut acc2_v = vmovq_n_u8(0);
-        let mut acc3_v = vmovq_n_u8(0);
-        let mut acc4_v = vmovq_n_u8(0);
-        let mut acc5_v = vmovq_n_u8(0);
-        let mut acc6_v = vmovq_n_u8(0);
-        let mut acc7_v = vmovq_n_u8(0);
-        let mut acc8_v = vmovq_n_u8(0);
-        let sub_v = vld1q_dup_u8(&(b's' - 1));
-        for block_i in 0..n_blocks {
-            let offset = block_i * N_LANES * UNROLL_FACTOR;
-
-            let input1_v = vld1q_u8(input[offset..].as_ptr());
-            let eq_s1_v = vqsubq_u8(input1_v, sub_v);
-            acc1_v = vaddq_u8(acc1_v, eq_s1_v);
-
-            let input2_v = vld1q_u8(input[offset + N_LANES..].as_ptr());
-            let eq_s2_v = vqsubq_u8(input2_v, sub_v);
-            acc2_v = vaddq_u8(acc2_v, eq_s2_v);
-
-            let input3_v = vld1q_u8(input[offset + 2 * N_LANES..].as_ptr());
-            let eq_s3_v = vqsubq_u8(input3_v, sub_v);
-            acc3_v = vaddq_u8(acc3_v, eq_s3_v);
-
-            let input4_v = vld1q_u8(input[offset + 3 * N_LANES..].as_ptr());
-            let eq_s4_v = vqsubq_u8(input4_v, sub_v);
-            acc4_v = vaddq_u8(acc4_v, eq_s4_v);
-
-            let input5_v = vld1q_u8(input[offset + 4 * N_LANES..].as_ptr());
-            let eq_s5_v = vqsubq_u8(input5_v, sub_v);
-            acc5_v = vaddq_u8(acc5_v, eq_s5_v);
-
-            let input6_v = vld1q_u8(input[offset + 5 * N_LANES..].as_ptr());
-            let eq_s6_v = vqsubq_u8(input6_v, sub_v);
-            acc6_v = vaddq_u8(acc6_v, eq_s6_v);
-
-            let input7_v = vld1q_u8(input[offset + 6 * N_LANES..].as_ptr());
-            let eq_s7_v = vqsubq_u8(input7_v, sub_v);
-            acc7_v = vaddq_u8(acc7_v, eq_s7_v);
-
-            let input8_v = vld1q_u8(input[offset + 7 * N_LANES..].as_ptr());
-            let eq_s8_v = vqsubq_u8(input8_v, sub_v);
-            acc8_v = vaddq_u8(acc8_v, eq_s8_v);
-
-            if block_i % (u8::MAX as usize + 1) == u8::MAX as usize {
-                res += vaddlvq_u8(acc1_v) as i64;
-                res += vaddlvq_u8(acc2_v) as i64;
-                res += vaddlvq_u8(acc3_v) as i64;
-                res += vaddlvq_u8(acc4_v) as i64;
-                res += vaddlvq_u8(acc5_v) as i64;
-                res += vaddlvq_u8(acc6_v) as i64;
-                res += vaddlvq_u8(acc7_v) as i64;
-                res += vaddlvq_u8(acc8_v) as i64;
-                acc1_v = vmovq_n_u8(0);
-                acc2_v = vmovq_n_u8(0);
-                acc3_v = vmovq_n_u8(0);
-                acc4_v = vmovq_n_u8(0);
-                acc5_v = vmovq_n_u8(0);
-                acc6_v = vmovq_n_u8(0);
-                acc7_v = vmovq_n_u8(0);
-                acc8_v = vmovq_n_u8(0);
-            }
-        }
-        res += vaddlvq_u8(acc1_v) as i64;
-        res += vaddlvq_u8(acc2_v) as i64;
-        res += vaddlvq_u8(acc3_v) as i64;
-        res += vaddlvq_u8(acc4_v) as i64;
-        res += vaddlvq_u8(acc5_v) as i64;
-        res += vaddlvq_u8(acc6_v) as i64;
-        res += vaddlvq_u8(acc7_v) as i64;
-        res += vaddlvq_u8(acc8_v) as i64;
-    }
-    res = (2 * res) - n_fast as i64;
-    res + baseline_bytes(&input[n_fast..])
-}
+simd_unrolled!(opt4_simd_unrolled_2x, 2);
+simd_unrolled!(opt5_simd_unrolled_4x, 4);
+simd_unrolled!(opt6_simd_unrolled_8x, 8);
+simd_unrolled!(opt7_simd_unrolled_16x, 16);
 
 pub fn gen_random_input(size: usize) -> String {
     let mut input = String::with_capacity(size);
@@ -266,10 +135,11 @@ mod tests {
         assert_eq!(expected, baseline_bytes(input));
         assert_eq!(expected, opt1_idiomatic(input));
         assert_eq!(expected, opt2_count_s(input));
-        assert_eq!(expected, opt3_simd_naive(input));
-        assert_eq!(expected, opt4_simd_unrolled(input));
+        assert_eq!(expected, opt3_simd(input));
+        assert_eq!(expected, opt4_simd_unrolled_2x(input));
         assert_eq!(expected, opt5_simd_unrolled_4x(input));
         assert_eq!(expected, opt6_simd_unrolled_8x(input));
+        assert_eq!(expected, opt7_simd_unrolled_16x(input));
     }
 
     #[test]
@@ -279,9 +149,10 @@ mod tests {
         assert_eq!(expected, baseline_bytes(&input));
         assert_eq!(expected, opt1_idiomatic(&input));
         assert_eq!(expected, opt2_count_s(&input));
-        assert_eq!(expected, opt3_simd_naive(&input));
-        assert_eq!(expected, opt4_simd_unrolled(&input));
+        assert_eq!(expected, opt3_simd(&input));
+        assert_eq!(expected, opt4_simd_unrolled_2x(&input));
         assert_eq!(expected, opt5_simd_unrolled_4x(&input));
         assert_eq!(expected, opt6_simd_unrolled_8x(&input));
+        assert_eq!(expected, opt7_simd_unrolled_16x(&input));
     }
 }

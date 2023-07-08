@@ -20,13 +20,16 @@ fn benchmark(c: &mut Criterion) {
         b.iter(|| opt4_simd_unrolled_2x(black_box(&input)))
     });
     c.bench_function("simd unrolled 4x", |b| {
-        b.iter(|| opt5_simd_unrolled_4x(black_box(&input)))
+        b.iter(|| opt4_simd_unrolled_4x(black_box(&input)))
     });
     c.bench_function("simd unrolled 8x", |b| {
-        b.iter(|| opt6_simd_unrolled_8x(black_box(&input)))
+        b.iter(|| opt4_simd_unrolled_8x(black_box(&input)))
+    });
+    c.bench_function("simd unrolled 10x", |b| {
+        b.iter(|| opt4_simd_unrolled_10x(black_box(&input)))
     });
     c.bench_function("simd unrolled 16x", |b| {
-        b.iter(|| opt7_simd_unrolled_16x(black_box(&input)))
+        b.iter(|| opt4_simd_unrolled_16x(black_box(&input)))
     });
 }
 

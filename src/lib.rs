@@ -109,9 +109,10 @@ macro_rules! simd_unrolled {
 }
 
 simd_unrolled!(opt4_simd_unrolled_2x, 2);
-simd_unrolled!(opt5_simd_unrolled_4x, 4);
-simd_unrolled!(opt6_simd_unrolled_8x, 8);
-simd_unrolled!(opt7_simd_unrolled_16x, 16);
+simd_unrolled!(opt4_simd_unrolled_4x, 4);
+simd_unrolled!(opt4_simd_unrolled_8x, 8);
+simd_unrolled!(opt4_simd_unrolled_10x, 10);
+simd_unrolled!(opt4_simd_unrolled_16x, 16);
 
 pub fn gen_random_input(size: usize) -> String {
     let mut input = String::with_capacity(size);
@@ -137,9 +138,10 @@ mod tests {
         assert_eq!(expected, opt2_count_s(input));
         assert_eq!(expected, opt3_simd(input));
         assert_eq!(expected, opt4_simd_unrolled_2x(input));
-        assert_eq!(expected, opt5_simd_unrolled_4x(input));
-        assert_eq!(expected, opt6_simd_unrolled_8x(input));
-        assert_eq!(expected, opt7_simd_unrolled_16x(input));
+        assert_eq!(expected, opt4_simd_unrolled_4x(input));
+        assert_eq!(expected, opt4_simd_unrolled_8x(input));
+        assert_eq!(expected, opt4_simd_unrolled_10x(input));
+        assert_eq!(expected, opt4_simd_unrolled_16x(input));
     }
 
     #[test]
@@ -151,8 +153,9 @@ mod tests {
         assert_eq!(expected, opt2_count_s(&input));
         assert_eq!(expected, opt3_simd(&input));
         assert_eq!(expected, opt4_simd_unrolled_2x(&input));
-        assert_eq!(expected, opt5_simd_unrolled_4x(&input));
-        assert_eq!(expected, opt6_simd_unrolled_8x(&input));
-        assert_eq!(expected, opt7_simd_unrolled_16x(&input));
+        assert_eq!(expected, opt4_simd_unrolled_4x(&input));
+        assert_eq!(expected, opt4_simd_unrolled_8x(&input));
+        assert_eq!(expected, opt4_simd_unrolled_10x(&input));
+        assert_eq!(expected, opt4_simd_unrolled_16x(&input));
     }
 }

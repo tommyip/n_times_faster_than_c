@@ -18,6 +18,15 @@ fn benchmark(c: &mut Criterion) {
     c.bench_function("simd naive", |b| {
         b.iter(|| opt3_simd_naive(black_box(&input)))
     });
+    c.bench_function("simd unrolled 2x", |b| {
+        b.iter(|| opt4_simd_unrolled(black_box(&input)))
+    });
+    c.bench_function("simd unrolled 4x", |b| {
+        b.iter(|| opt5_simd_unrolled_4x(black_box(&input)))
+    });
+    c.bench_function("simd unrolled 8x", |b| {
+        b.iter(|| opt6_simd_unrolled_8x(black_box(&input)))
+    });
 }
 
 criterion_group!(benches, benchmark);

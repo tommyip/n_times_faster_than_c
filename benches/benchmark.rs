@@ -15,21 +15,24 @@ fn benchmark(c: &mut Criterion) {
         b.iter(|| opt1_idiomatic(black_box(&input)))
     });
     c.bench_function("count s", |b| b.iter(|| opt2_count_s(black_box(&input))));
-    c.bench_function("simd", |b| b.iter(|| opt3_simd(black_box(&input))));
+    c.bench_function("count s branchless", |b| {
+        b.iter(|| opt3_count_s_branchless(black_box(&input)))
+    });
+    c.bench_function("simd", |b| b.iter(|| opt4_simd(black_box(&input))));
     c.bench_function("simd unrolled 2x", |b| {
-        b.iter(|| opt4_simd_unrolled_2x(black_box(&input)))
+        b.iter(|| opt5_simd_unrolled_2x(black_box(&input)))
     });
     c.bench_function("simd unrolled 4x", |b| {
-        b.iter(|| opt4_simd_unrolled_4x(black_box(&input)))
+        b.iter(|| opt5_simd_unrolled_4x(black_box(&input)))
     });
     c.bench_function("simd unrolled 8x", |b| {
-        b.iter(|| opt4_simd_unrolled_8x(black_box(&input)))
+        b.iter(|| opt5_simd_unrolled_8x(black_box(&input)))
     });
     c.bench_function("simd unrolled 10x", |b| {
-        b.iter(|| opt4_simd_unrolled_10x(black_box(&input)))
+        b.iter(|| opt5_simd_unrolled_10x(black_box(&input)))
     });
     c.bench_function("simd unrolled 16x", |b| {
-        b.iter(|| opt4_simd_unrolled_16x(black_box(&input)))
+        b.iter(|| opt5_simd_unrolled_16x(black_box(&input)))
     });
 }
 

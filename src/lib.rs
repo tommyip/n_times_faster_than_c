@@ -15,9 +15,8 @@ pub fn baseline(input: &str) -> i64 {
 }
 
 pub fn baseline_bytes(input: &str) -> i64 {
-    let bytes = input.as_bytes();
     let mut res = 0;
-    for b in bytes {
+    for b in input.bytes() {
         match b {
             b's' => res += 1,
             b'p' => res -= 1,
@@ -29,9 +28,8 @@ pub fn baseline_bytes(input: &str) -> i64 {
 
 pub fn opt1_idiomatic(input: &str) -> i64 {
     input
-        .as_bytes()
-        .into_iter()
-        .map(|&b| match b {
+        .bytes()
+        .map(|b| match b {
             b's' => 1,
             b'p' => -1,
             _ => 0,
@@ -40,11 +38,19 @@ pub fn opt1_idiomatic(input: &str) -> i64 {
 }
 
 pub fn opt2_count_s(input: &str) -> i64 {
-    let n_s = input.as_bytes().into_iter().filter(|&&b| b == b's').count();
-    return (2 * n_s) as i64 - input.len() as i64;
+    let n_s = input.bytes().filter(|&b| b == b's').count();
+    (2 * n_s) as i64 - input.len() as i64
 }
 
-pub fn opt3_simd(input: &str) -> i64 {
+pub fn opt3_count_s_branchless(input: &str) -> i64 {
+    let n_s = input
+        .bytes()
+        .map(|b| b.saturating_sub(b's' - 1) as i64)
+        .sum::<i64>();
+    (2 * n_s) - input.len() as i64
+}
+
+pub fn opt4_simd(input: &str) -> i64 {
     let n = input.len();
     const N_LANES: usize = 16;
     let n_blocks = n / N_LANES;
@@ -108,11 +114,11 @@ macro_rules! simd_unrolled {
     }
 }
 
-simd_unrolled!(opt4_simd_unrolled_2x, 2);
-simd_unrolled!(opt4_simd_unrolled_4x, 4);
-simd_unrolled!(opt4_simd_unrolled_8x, 8);
-simd_unrolled!(opt4_simd_unrolled_10x, 10);
-simd_unrolled!(opt4_simd_unrolled_16x, 16);
+simd_unrolled!(opt5_simd_unrolled_2x, 2);
+simd_unrolled!(opt5_simd_unrolled_4x, 4);
+simd_unrolled!(opt5_simd_unrolled_8x, 8);
+simd_unrolled!(opt5_simd_unrolled_10x, 10);
+simd_unrolled!(opt5_simd_unrolled_16x, 16);
 
 pub fn gen_random_input(size: usize) -> String {
     let mut input = String::with_capacity(size);
@@ -136,12 +142,13 @@ mod tests {
         assert_eq!(expected, baseline_bytes(input));
         assert_eq!(expected, opt1_idiomatic(input));
         assert_eq!(expected, opt2_count_s(input));
-        assert_eq!(expected, opt3_simd(input));
-        assert_eq!(expected, opt4_simd_unrolled_2x(input));
-        assert_eq!(expected, opt4_simd_unrolled_4x(input));
-        assert_eq!(expected, opt4_simd_unrolled_8x(input));
-        assert_eq!(expected, opt4_simd_unrolled_10x(input));
-        assert_eq!(expected, opt4_simd_unrolled_16x(input));
+        assert_eq!(expected, opt3_count_s_branchless(input));
+        assert_eq!(expected, opt4_simd(input));
+        assert_eq!(expected, opt5_simd_unrolled_2x(input));
+        assert_eq!(expected, opt5_simd_unrolled_4x(input));
+        assert_eq!(expected, opt5_simd_unrolled_8x(input));
+        assert_eq!(expected, opt5_simd_unrolled_10x(input));
+        assert_eq!(expected, opt5_simd_unrolled_16x(input));
     }
 
     #[test]
@@ -151,11 +158,12 @@ mod tests {
         assert_eq!(expected, baseline_bytes(&input));
         assert_eq!(expected, opt1_idiomatic(&input));
         assert_eq!(expected, opt2_count_s(&input));
-        assert_eq!(expected, opt3_simd(&input));
-        assert_eq!(expected, opt4_simd_unrolled_2x(&input));
-        assert_eq!(expected, opt4_simd_unrolled_4x(&input));
-        assert_eq!(expected, opt4_simd_unrolled_8x(&input));
-        assert_eq!(expected, opt4_simd_unrolled_10x(&input));
-        assert_eq!(expected, opt4_simd_unrolled_16x(&input));
+        assert_eq!(expected, opt3_count_s_branchless(&input));
+        assert_eq!(expected, opt4_simd(&input));
+        assert_eq!(expected, opt5_simd_unrolled_2x(&input));
+        assert_eq!(expected, opt5_simd_unrolled_4x(&input));
+        assert_eq!(expected, opt5_simd_unrolled_8x(&input));
+        assert_eq!(expected, opt5_simd_unrolled_10x(&input));
+        assert_eq!(expected, opt5_simd_unrolled_16x(&input));
     }
 }

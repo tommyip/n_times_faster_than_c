@@ -2,7 +2,7 @@ use rand::{distributions::Bernoulli, prelude::Distribution, thread_rng};
 use seq_macro::seq;
 use std::arch::aarch64::{vaddlvq_u8, vaddq_u8, vandq_u8, vld1q_u8, vmovq_n_u8};
 
-pub fn baseline(input: &str) -> i64 {
+pub fn baseline_unicode(input: &str) -> i64 {
     let mut res = 0;
     for c in input.chars() {
         match c {
@@ -14,7 +14,7 @@ pub fn baseline(input: &str) -> i64 {
     res
 }
 
-pub fn baseline_bytes(input: &str) -> i64 {
+pub fn baseline(input: &str) -> i64 {
     let mut res = 0;
     for b in input.bytes() {
         match b {
@@ -68,7 +68,7 @@ pub fn opt4_simd(input: &str) -> i64 {
         res += vaddlvq_u8(acc_v) as i64;
     }
     res = (2 * res) - n_simd_elems as i64;
-    res + baseline_bytes(&input[n_simd_elems..])
+    res + baseline(&input[n_simd_elems..])
 }
 
 macro_rules! simd_unrolled {
@@ -104,7 +104,7 @@ macro_rules! simd_unrolled {
                 });
             }
             res = (2 * res) - n_simd_elems as i64;
-            res + baseline_bytes(&input[n_simd_elems..])
+            res + baseline(&input[n_simd_elems..])
         }
     }
 }
@@ -113,6 +113,7 @@ simd_unrolled!(opt5_simd_unrolled_2x, 2);
 simd_unrolled!(opt5_simd_unrolled_4x, 4);
 simd_unrolled!(opt5_simd_unrolled_8x, 8);
 simd_unrolled!(opt5_simd_unrolled_10x, 10);
+simd_unrolled!(opt5_simd_unrolled_12x, 12);
 simd_unrolled!(opt5_simd_unrolled_16x, 16);
 
 pub fn gen_random_input(size: usize) -> String {
@@ -131,8 +132,8 @@ mod tests {
 
     macro_rules! assert_eq_all {
         ($expected:expr, $input:expr) => {
+            assert_eq!($expected, baseline_unicode($input));
             assert_eq!($expected, baseline($input));
-            assert_eq!($expected, baseline_bytes($input));
             assert_eq!($expected, opt1_idiomatic($input));
             assert_eq!($expected, opt2_count_s($input));
             assert_eq!($expected, opt3_count_s_branchless($input));
@@ -141,6 +142,7 @@ mod tests {
             assert_eq!($expected, opt5_simd_unrolled_4x($input));
             assert_eq!($expected, opt5_simd_unrolled_8x($input));
             assert_eq!($expected, opt5_simd_unrolled_10x($input));
+            assert_eq!($expected, opt5_simd_unrolled_12x($input));
             assert_eq!($expected, opt5_simd_unrolled_16x($input));
         };
     }
@@ -155,7 +157,7 @@ mod tests {
     #[test]
     fn test_large() {
         let input = gen_random_input(421337);
-        let expected = baseline(&input);
+        let expected = baseline_unicode(&input);
         assert_eq_all!(expected, &input);
     }
 }

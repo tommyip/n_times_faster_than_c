@@ -8,9 +8,9 @@ fn benchmark(c: &mut Criterion) {
     let input = gen_random_input(INPUT_SIZE);
 
     c.bench_function("baseline (unicode)", |b| {
-        b.iter(|| baseline(black_box(&input)))
+        b.iter(|| baseline_unicode(black_box(&input)))
     });
-    c.bench_function("baseline", |b| b.iter(|| baseline_bytes(black_box(&input))));
+    c.bench_function("baseline", |b| b.iter(|| baseline(black_box(&input))));
     c.bench_function("idiomatic", |b| {
         b.iter(|| opt1_idiomatic(black_box(&input)))
     });
@@ -30,6 +30,9 @@ fn benchmark(c: &mut Criterion) {
     });
     c.bench_function("simd unrolled 10x", |b| {
         b.iter(|| opt5_simd_unrolled_10x(black_box(&input)))
+    });
+    c.bench_function("simd unrolled 12x", |b| {
+        b.iter(|| opt5_simd_unrolled_12x(black_box(&input)))
     });
     c.bench_function("simd unrolled 16x", |b| {
         b.iter(|| opt5_simd_unrolled_16x(black_box(&input)))

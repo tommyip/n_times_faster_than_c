@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 
 use n_times_faster_than_c::*;
 
@@ -7,36 +7,29 @@ const INPUT_SIZE: usize = 1_000_000;
 fn benchmark(c: &mut Criterion) {
     let input = gen_random_input(INPUT_SIZE);
 
-    c.bench_function("baseline (unicode)", |b| {
-        b.iter(|| baseline_unicode(black_box(&input)))
-    });
-    c.bench_function("baseline", |b| b.iter(|| baseline(black_box(&input))));
-    c.bench_function("idiomatic", |b| {
-        b.iter(|| opt1_idiomatic(black_box(&input)))
-    });
-    c.bench_function("count s", |b| b.iter(|| opt2_count_s(black_box(&input))));
-    c.bench_function("count s branchless", |b| {
-        b.iter(|| opt3_count_s_branchless(black_box(&input)))
-    });
-    c.bench_function("simd", |b| b.iter(|| opt4_simd(black_box(&input))));
-    c.bench_function("simd unrolled 2x", |b| {
-        b.iter(|| opt5_simd_unrolled_2x(black_box(&input)))
-    });
-    c.bench_function("simd unrolled 4x", |b| {
-        b.iter(|| opt5_simd_unrolled_4x(black_box(&input)))
-    });
-    c.bench_function("simd unrolled 8x", |b| {
-        b.iter(|| opt5_simd_unrolled_8x(black_box(&input)))
-    });
-    c.bench_function("simd unrolled 10x", |b| {
-        b.iter(|| opt5_simd_unrolled_10x(black_box(&input)))
-    });
-    c.bench_function("simd unrolled 12x", |b| {
-        b.iter(|| opt5_simd_unrolled_12x(black_box(&input)))
-    });
-    c.bench_function("simd unrolled 16x", |b| {
-        b.iter(|| opt5_simd_unrolled_16x(black_box(&input)))
-    });
+    let mut group = c.benchmark_group("run_switches");
+    group.throughput(criterion::Throughput::Bytes(INPUT_SIZE as u64));
+
+    macro_rules! bench {
+        ($fn_name:ident) => {
+            group.bench_with_input(stringify!($fn_name), &input, |b, input| {
+                b.iter(|| $fn_name(input));
+            });
+        };
+    }
+
+    bench!(baseline_unicode);
+    bench!(baseline);
+    bench!(opt1_idiomatic);
+    bench!(opt2_count_s);
+    bench!(opt3_count_s_branchless);
+    bench!(opt4_simd);
+    bench!(opt5_simd_unrolled_2x);
+    bench!(opt5_simd_unrolled_4x);
+    bench!(opt5_simd_unrolled_8x);
+    bench!(opt5_simd_unrolled_10x);
+    bench!(opt5_simd_unrolled_12x);
+    bench!(opt5_simd_unrolled_16x);
 }
 
 criterion_group!(benches, benchmark);

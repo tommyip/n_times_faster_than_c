@@ -2,6 +2,10 @@
 
 ## Benchmark Setup
 
+Rust version: `rustc 1.70.0 (90c541806 2023-05-31)`  
+Run test: `cargo test`  
+Run benchmark: `cargo bench`
+
 Machine: Apple MacBook Pro 14-inch (2021)  
 Processor: Apple M1 Pro  
 Memory: 16 GB

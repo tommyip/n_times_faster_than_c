@@ -31,6 +31,7 @@ fn benchmark(c: &mut Criterion) {
     bench!(opt5_simd_unrolled_12x);
     bench!(opt5_simd_unrolled_16x);
     bench!(opt6_chunk_count);
+    bench!(opt6_chunk_exact_count);
 }
 
 criterion_group!(benches, benchmark);

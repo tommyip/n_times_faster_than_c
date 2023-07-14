@@ -128,6 +128,19 @@ pub fn opt6_chunk_count(input: &str) -> i64 {
     (2 * n_s) - input.len() as i64
 }
 
+/// Credit to u/Sharlinator
+/// https://www.reddit.com/r/rust/comments/14yvlc9/comment/jrwt29t
+pub fn opt6_chunk_exact_count(input: &str) -> i64 {
+    let iter = input.as_bytes().chunks_exact(256);
+    let rest = iter.remainder();
+    let mut n_s = iter
+        .map(|chunk| chunk.iter().map(|&b| b & 1).sum::<u8>())
+        .map(|chunk_total| chunk_total as i64)
+        .sum::<i64>();
+    n_s += rest.iter().map(|&b| b & 1).sum::<u8>() as i64;
+    (2 * n_s) - input.len() as i64
+}
+
 pub fn gen_random_input(size: usize) -> String {
     let mut input = String::with_capacity(size);
     let dist = Bernoulli::new(0.5).unwrap();
@@ -157,6 +170,7 @@ mod tests {
             assert_eq!($expected, opt5_simd_unrolled_12x($input));
             assert_eq!($expected, opt5_simd_unrolled_16x($input));
             assert_eq!($expected, opt6_chunk_count($input));
+            assert_eq!($expected, opt6_chunk_exact_count($input));
         };
     }
 

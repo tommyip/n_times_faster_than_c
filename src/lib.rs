@@ -116,6 +116,18 @@ simd_unrolled!(opt5_simd_unrolled_10x, 10);
 simd_unrolled!(opt5_simd_unrolled_12x, 12);
 simd_unrolled!(opt5_simd_unrolled_16x, 16);
 
+/// Credit to u/DavidM603
+/// https://www.reddit.com/r/rust/comments/14yvlc9/comment/jrwkag7
+pub fn opt6_chunk_count(input: &str) -> i64 {
+    let n_s = input
+        .as_bytes()
+        .chunks(256)
+        .map(|chunk| chunk.iter().map(|&b| b & 1).sum::<u8>())
+        .map(|chunk_total| chunk_total as i64)
+        .sum::<i64>();
+    (2 * n_s) - input.len() as i64
+}
+
 pub fn gen_random_input(size: usize) -> String {
     let mut input = String::with_capacity(size);
     let dist = Bernoulli::new(0.5).unwrap();
@@ -144,6 +156,7 @@ mod tests {
             assert_eq!($expected, opt5_simd_unrolled_10x($input));
             assert_eq!($expected, opt5_simd_unrolled_12x($input));
             assert_eq!($expected, opt5_simd_unrolled_16x($input));
+            assert_eq!($expected, opt6_chunk_count($input));
         };
     }
 

@@ -26,6 +26,9 @@ Function                  | Time      | Throughput   | Relative speed
 `opt5_simd_unrolled_2x`   | 32.277 µs | 28.854 GiB/s | 103.2
 `opt5_simd_unrolled_4x`   | 28.265 µs | 32.950 GiB/s | 117.9
 `opt5_simd_unrolled_8x`   | 26.323 µs | 35.380 GiB/s | 126.6
-`opt5_simd_unrolled_10x`  | 25.896 µs | 35.964 GiB/s | **128.6** 🎉
+`opt5_simd_unrolled_10x`  | 25.896 µs | 35.964 GiB/s | 128.6 🎉
 `opt5_simd_unrolled_12x`  | 27.697 µs | 33.626 GiB/s | 120.3
 `opt5_simd_unrolled_16x`  | 26.954 µs | 34.553 GiB/s | 123.6
+`opt6_chunk_count`[^1]    | 12.517 µs | 74.403 GiB/s | 266.2 🚀
+
+[^1]: Code suggested by Reddit user [u/DavidM603](https://www.reddit.com/r/rust/comments/14yvlc9/comment/jrwkag7).

@@ -60,7 +60,7 @@ pub fn opt4_simd(input: &str) -> i64 {
             let input_v = vld1q_u8(input[block_i * N_LANES..].as_ptr());
             let eq_s_v = vandq_u8(input_v, one_v);
             acc_v = vaddq_u8(acc_v, eq_s_v);
-            if block_i % (u8::MAX as usize + 1) == u8::MAX as usize {
+            if block_i % u8::MAX as usize == (u8::MAX - 1) as usize {
                 res += vaddlvq_u8(acc_v) as i64;
                 acc_v = vmovq_n_u8(0);
             }
@@ -92,7 +92,7 @@ macro_rules! simd_unrolled {
                         let v_eq_s~I= vandq_u8(v_input~I, one_v);
                         v_acc~I = vaddq_u8(v_acc~I, v_eq_s~I);
                     });
-                    if block_i % (u8::MAX as usize + 1) == u8::MAX as usize {
+                    if block_i % u8::MAX as usize == (u8::MAX - 1) as usize {
                         seq!(I in 0..$unroll_factor {
                             res += vaddlvq_u8(v_acc~I) as i64;
                             v_acc~I = vmovq_n_u8(0);
@@ -186,5 +186,12 @@ mod tests {
         let input = gen_random_input(421337);
         let expected = baseline_unicode(&input);
         assert_eq_all!(expected, &input);
+    }
+
+    #[test]
+    fn test_all_s() {
+        let expected = 1024 * 1024;
+        let input = "s".repeat(expected);
+        assert_eq_all!(expected as i64, &input);
     }
 }

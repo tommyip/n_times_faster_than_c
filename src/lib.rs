@@ -60,7 +60,7 @@ pub fn opt4_simd(input: &str) -> i64 {
             let input_v = vld1q_u8(input[block_i * N_LANES..].as_ptr());
             let eq_s_v = vandq_u8(input_v, one_v);
             acc_v = vaddq_u8(acc_v, eq_s_v);
-            if block_i % (u8::MAX as usize + 1) == u8::MAX as usize {
+            if block_i % 128 == 127 {
                 res += vaddlvq_u8(acc_v) as i64;
                 acc_v = vmovq_n_u8(0);
             }
@@ -92,7 +92,7 @@ macro_rules! simd_unrolled {
                         let v_eq_s~I= vandq_u8(v_input~I, one_v);
                         v_acc~I = vaddq_u8(v_acc~I, v_eq_s~I);
                     });
-                    if block_i % (u8::MAX as usize + 1) == u8::MAX as usize {
+                    if block_i % 128 == 127 {
                         seq!(I in 0..$unroll_factor {
                             res += vaddlvq_u8(v_acc~I) as i64;
                             v_acc~I = vmovq_n_u8(0);
@@ -121,7 +121,7 @@ simd_unrolled!(opt5_simd_unrolled_16x, 16);
 pub fn opt6_chunk_count(input: &str) -> i64 {
     let n_s = input
         .as_bytes()
-        .chunks(256)
+        .chunks(192)
         .map(|chunk| chunk.iter().map(|&b| b & 1).sum::<u8>())
         .map(|chunk_total| chunk_total as i64)
         .sum::<i64>();
@@ -131,7 +131,7 @@ pub fn opt6_chunk_count(input: &str) -> i64 {
 /// Credit to u/Sharlinator
 /// https://www.reddit.com/r/rust/comments/14yvlc9/comment/jrwt29t
 pub fn opt6_chunk_exact_count(input: &str) -> i64 {
-    let iter = input.as_bytes().chunks_exact(256);
+    let iter = input.as_bytes().chunks_exact(192);
     let rest = iter.remainder();
     let mut n_s = iter
         .map(|chunk| chunk.iter().map(|&b| b & 1).sum::<u8>())
@@ -186,5 +186,12 @@ mod tests {
         let input = gen_random_input(421337);
         let expected = baseline_unicode(&input);
         assert_eq_all!(expected, &input);
+    }
+
+    #[test]
+    fn test_all_s() {
+        let expected = 1024 * 1024;
+        let input = "s".repeat(expected);
+        assert_eq_all!(expected as i64, &input);
     }
 }

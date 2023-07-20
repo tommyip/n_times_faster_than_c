@@ -23,13 +23,16 @@ fn benchmark(c: &mut Criterion) {
     bench!(opt1_idiomatic);
     bench!(opt2_count_s);
     bench!(opt3_count_s_branchless);
-    bench!(opt4_simd);
-    bench!(opt5_simd_unrolled_2x);
-    bench!(opt5_simd_unrolled_4x);
-    bench!(opt5_simd_unrolled_8x);
-    bench!(opt5_simd_unrolled_10x);
-    bench!(opt5_simd_unrolled_12x);
-    bench!(opt5_simd_unrolled_16x);
+    #[cfg(target_arch = "aarch64")]
+    {
+        bench!(opt4_simd);
+        bench!(opt5_simd_unrolled_2x);
+        bench!(opt5_simd_unrolled_4x);
+        bench!(opt5_simd_unrolled_8x);
+        bench!(opt5_simd_unrolled_10x);
+        bench!(opt5_simd_unrolled_12x);
+        bench!(opt5_simd_unrolled_16x);
+    }
     bench!(opt6_chunk_count);
     bench!(opt6_chunk_exact_count);
 }

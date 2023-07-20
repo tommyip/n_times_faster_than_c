@@ -1,5 +1,7 @@
 use rand::{distributions::Bernoulli, prelude::Distribution, thread_rng};
+#[cfg(target_arch = "aarch64")]
 use seq_macro::seq;
+#[cfg(target_arch = "aarch64")]
 use std::arch::aarch64::{vaddlvq_u8, vaddq_u8, vandq_u8, vld1q_u8, vmovq_n_u8};
 
 pub fn baseline_unicode(input: &str) -> i64 {
@@ -47,6 +49,7 @@ pub fn opt3_count_s_branchless(input: &str) -> i64 {
     (2 * n_s) - input.len() as i64
 }
 
+#[cfg(target_arch = "aarch64")]
 pub fn opt4_simd(input: &str) -> i64 {
     let n = input.len();
     const N_LANES: usize = 16;
@@ -73,6 +76,7 @@ pub fn opt4_simd(input: &str) -> i64 {
 
 macro_rules! simd_unrolled {
     ($func_name:ident, $unroll_factor:literal) => {
+         #[cfg(target_arch = "aarch64")]
          pub fn $func_name(input: &str) -> i64 {
             let n = input.len();
             const N_LANES: usize = 16;
@@ -162,13 +166,16 @@ mod tests {
             assert_eq!($expected, opt1_idiomatic($input));
             assert_eq!($expected, opt2_count_s($input));
             assert_eq!($expected, opt3_count_s_branchless($input));
-            assert_eq!($expected, opt4_simd($input));
-            assert_eq!($expected, opt5_simd_unrolled_2x($input));
-            assert_eq!($expected, opt5_simd_unrolled_4x($input));
-            assert_eq!($expected, opt5_simd_unrolled_8x($input));
-            assert_eq!($expected, opt5_simd_unrolled_10x($input));
-            assert_eq!($expected, opt5_simd_unrolled_12x($input));
-            assert_eq!($expected, opt5_simd_unrolled_16x($input));
+            #[cfg(target_arch = "aarch64")]
+            {
+                assert_eq!($expected, opt4_simd($input));
+                assert_eq!($expected, opt5_simd_unrolled_2x($input));
+                assert_eq!($expected, opt5_simd_unrolled_4x($input));
+                assert_eq!($expected, opt5_simd_unrolled_8x($input));
+                assert_eq!($expected, opt5_simd_unrolled_10x($input));
+                assert_eq!($expected, opt5_simd_unrolled_12x($input));
+                assert_eq!($expected, opt5_simd_unrolled_16x($input));
+            }
             assert_eq!($expected, opt6_chunk_count($input));
             assert_eq!($expected, opt6_chunk_exact_count($input));
         };
